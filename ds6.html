@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced SRP Designer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --dark-bg: linear-gradient(to top, #0f1a25, #1a2a3a);
+            --light-bg: linear-gradient(to top, #d8e3f0, #f0f4f8);
+            --dark-panel: rgba(30, 40, 50, 0.9);
+            --light-panel: rgba(255, 255, 255, 0.95);
+            --dark-text: #e0e0e0;
+            --light-text: #2d3748;
+            --dark-primary: #ffc107;
+            --light-primary: #ff9800;
+            --dark-secondary: #4fc3f7;
+            --light-secondary: #2196f3;
+            --dark-accent: #64ffda;
+            --light-accent: #00bcd4;
+            --dark-card: rgba(40, 50, 60, 0.7);
+            --light-card: rgba(245, 247, 250, 0.9);
+            --dark-shadow: rgba(0, 0, 0, 0.5);
+            --light-shadow: rgba(0, 0, 0, 0.1);
+            --dark-border: rgba(255, 255, 255, 0.15);
+            --light-border: rgba(0, 0, 0, 0.1);
+            --gold-surface: #ffd700;
+            --gold-edge: #c9a227;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+        
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--light-bg);
+            color: var(--light-text);
+            transition: background 0.5s ease, color 0.5s ease;
+        }
+        
+        body.dark-theme {
+            background: var(--dark-bg);
+            color: var(--dark-text);
+        }
+        
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            /* Updated background images */
+            background: 
+                linear-gradient(rgba(240, 244, 248, 0.7), rgba(240, 244, 248, 0.7)),
+                url('images/bg.jpeg') center center / cover no-repeat;
+        }
+        
+        .dark-theme #canvas-container {
+            background: 
+                linear-gradient(rgba(26, 42, 58, 0.7), rgba(26, 42, 58, 0.7)),
+                url('images/bg.jpg') center center / cover no-repeat;
+        }
+        
+        #control-panel {
+            width: 350px;
+            background: var(--light-panel);
+            padding: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border-left: 1px solid var(--light-border);
+            box-shadow: -5px 0 15px var(--light-shadow);
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dark-theme #control-panel {
+            background: var(--dark-panel);
+            border-left: 1px solid var(--dark-border);
+            box-shadow: -5px 0 15px var(--dark-shadow);
+        }
+        
+        .panel-header {
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--light-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dark-theme .panel-header {
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .panel-header h1 {
+            font-size: 1.8rem;
+            color: var(--light-primary);
+            margin-bottom: 5px;
+        }
+        
+        .dark-theme .panel-header h1 {
+            color: var(--dark-primary);
+        }
+        
+        .panel-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .dark-theme .panel-header p {
+            color: #aaa;
+        }
+        
+        .theme-toggle {
+            background: var(--light-card);
+            border: 1px solid var(--light-border);
+            border-radius: 50px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+            width: 60px;
+        }
+        
+        .dark-theme .theme-toggle {
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .theme-toggle i {
+            font-size: 1.2rem;
+            color: var(--light-primary);
+            transition: all 0.3s ease;
+            z-index: 2;
+            padding: 0 5px;
+        }
+        
+        .dark-theme .theme-toggle i.fa-moon {
+            color: var(--dark-primary);
+        }
+        
+        .theme-toggle .toggle-indicator {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: var(--light-primary);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            left: 36px;
+            z-index: 1;
+        }
+        
+        .dark-theme .theme-toggle .toggle-indicator {
+            background: var(--dark-primary);
+            left: 8px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--light-card);
+            border-radius: 10px;
+            border: 1px solid var(--light-border);
+            transition: all 0.5s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .dark-theme .control-group {
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-group h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--light-accent);
+            display: flex;
+            align-items: center;
+        }
+        
+        .dark-theme .control-group h2 {
+            color: var(--dark-accent);
+        }
+        
+        .slider-control {
+            margin-bottom: 18px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .slider-label span:first-child {
+            color: #666;
+        }
+        
+        .dark-theme .slider-label span:first-child {
+            color: #ccc;
+        }
+        
+        .slider-label span:last-child {
+            color: var(--light-secondary);
+            font-weight: bold;
+        }
+        
+        .dark-theme .slider-label span:last-child {
+            color: var(--dark-secondary);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(33, 150, 243, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .dark-theme input[type="range"] {
+            background: rgba(100, 255, 218, 0.2);
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--light-primary);
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .dark-theme input[type="range"]::-webkit-slider-thumb {
+            background: var(--dark-primary);
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(to right, #1a2980, #26d0ce);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(30deg);
+            transition: all 0.5s;
+        }
+        
+        button:hover::after {
+            transform: rotate(30deg) translate(10%, 10%);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button i {
+            margin-right: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        button:hover i {
+            transform: scale(1.2);
+        }
+        
+        #reset-btn {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+        }
+        
+        #export-btn {
+            background: linear-gradient(to right, #11998e, #38ef7d);
+        }
+        
+        #quote-btn {
+            background: linear-gradient(to right, #8E2DE2, #4A00E0);
+            grid-column: span 2;
+        }
+        
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--light-panel);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--light-border);
+            z-index: 10;
+            transition: all 0.5s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-theme #info-panel {
+            background: var(--dark-panel);
+            border: 1px solid var(--dark-border);
+        }
+        
+        #info-panel h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--light-primary);
+        }
+        
+        .dark-theme #info-panel h1 {
+            color: var(--dark-primary);
+        }
+        
+        #info-panel p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .dark-theme #info-panel p {
+            color: #ccc;
+        }
+        
+        #info-panel .stat-value {
+            color: var(--light-secondary);
+            font-weight: bold;
+        }
+        
+        .dark-theme #info-panel .stat-value {
+            color: var(--dark-secondary);
+        }
+        
+        /* Editable fields */
+        #info-panel input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed #999;
+            color: var(--light-text);
+            font-weight: bold;
+            padding: 2px 5px;
+            width: 120px;
+        }
+        
+        .dark-theme #info-panel input {
+            color: var(--dark-text);
+            border-bottom: 1px dashed #aaa;
+        }
+        
+        #info-panel input:focus {
+            outline: none;
+            border-bottom: 2px solid var(--light-primary);
+        }
+        
+        .dark-theme #info-panel input:focus {
+            border-bottom: 2px solid var(--dark-primary);
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: var(--light-primary);
+            background: var(--light-panel);
+            padding: 20px 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            z-index: 20;
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--light-border);
+            transition: all 0.5s ease;
+        }
+        
+        .dark-theme #loading {
+            background: var(--dark-panel);
+            color: var(--dark-primary);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--light-primary);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+            transition: all 0.5s ease;
+        }
+        
+        .dark-theme .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid var(--dark-primary);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Linked Sliders */
+        .linked-sliders {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .linked-sliders .slider-control {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .link-icon {
+            color: var(--light-primary);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+        }
+        
+        .dark-theme .link-icon {
+            color: var(--dark-primary);
+        }
+        
+        /* Percentage Selection */
+        .percentage-selection {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 8px;
+        }
+        
+        .dark-theme .percentage-selection {
+            background: rgba(100, 255, 218, 0.1);
+        }
+        
+        .percentage-options {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .percentage-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .percentage-option input {
+            cursor: pointer;
+        }
+        
+        .info-button {
+            background: var(--light-secondary);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dark-theme .info-button {
+            background: var(--dark-secondary);
+        }
+        
+        /* Mouse Controls */
+        #mouse-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: var(--light-panel);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--light-border);
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-theme #mouse-controls {
+            background: var(--dark-panel);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .dark-theme .control-item {
+            color: #aaa;
+        }
+        
+        .mouse-icon {
+            width: 30px;
+            height: 40px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+        
+        .mouse-outline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--light-secondary);
+            border-radius: 15px;
+        }
+        
+        .dark-theme .mouse-outline {
+            border-color: var(--dark-secondary);
+        }
+        
+        .mouse-left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40%;
+            height: 50%;
+            background: var(--light-primary);
+            border-radius: 15px 0 0 0;
+        }
+        
+        .dark-theme .mouse-left {
+            background: var(--dark-primary);
+        }
+        
+        .mouse-wheel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 15px;
+            background: var(--light-secondary);
+            border-radius: 3px;
+        }
+        
+        .dark-theme .mouse-wheel {
+            background: var(--dark-secondary);
+        }
+        
+        .mouse-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 40%;
+            height: 50%;
+            background: var(--light-primary);
+            border-radius: 0 15px 0 0;
+        }
+        
+        .dark-theme .mouse-right {
+            background: var(--dark-primary);
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: var(--light-panel);
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--light-border);
+            transition: all 0.5s ease;
+        }
+        
+        .dark-theme .modal-content {
+            background: var(--dark-panel);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--light-border);
+        }
+        
+        .dark-theme .modal-header {
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .modal-header h2 {
+            color: var(--light-primary);
+            font-size: 1.8rem;
+        }
+        
+        .dark-theme .modal-header h2 {
+            color: var(--dark-primary);
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--light-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            transform: rotate(90deg);
+        }
+        
+        .quote-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .option-group {
+            background: var(--light-card);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--light-border);
+        }
+        
+        .dark-theme .option-group {
+            background: var(--dark-card);
+            border: 1px solid var(--dark-border);
+        }
+        
+        .option-group h3 {
+            color: var(--light-accent);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .dark-theme .option-group h3 {
+            color: var(--dark-accent);
+        }
+        
+        .option-group h3 i {
+            margin-right: 10px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-item input {
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-item label {
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .sub-options {
+            margin-left: 30px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        /* Contact Form Styles */
+        .contact-form {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            color: var(--light-secondary);
+            font-weight: 500;
+        }
+        
+        .dark-theme .form-group label {
+            color: var(--dark-secondary);
+        }
+        
+        .form-group input {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--light-border);
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--light-text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .dark-theme .form-group input {
+            border: 1px solid var(--dark-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--dark-text);
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--light-primary);
+            box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3);
+        }
+        
+        .dark-theme .form-group input:focus {
+            border-color: var(--dark-primary);
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons button {
+            padding: 12px 25px;
+            min-width: 120px;
+        }
+        
+        .modal-buttons .cancel-btn {
+            background: linear-gradient(to right, #757575, #9e9e9e);
+        }
+        
+        .modal-buttons .submit-btn {
+            background: linear-gradient(to right, #00c853, #2e7d32);
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background: #10b981;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .notification.error {
+            background: #ef4444;
+        }
+        
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            color: rgba(0, 0, 0, 0.2);
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-style: italic;
+            z-index: 100;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        
+        .dark-theme .watermark {
+            color: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            #control-panel {
+                width: 320px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            #canvas-container {
+                height: 50vh;
+            }
+            
+            #control-panel {
+                width: 100%;
+                height: 50vh;
+            }
+            
+            #info-panel {
+                max-width: 90%;
+                top: 10px;
+                left: 5%;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .watermark {
+                font-size: 1rem;
+                bottom: 10px;
+                right: 10px;
+            }
+        }
+        
+        /* Reflection effect */
+        .reflection {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0));
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .dark-theme .reflection {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0));
+        }
+        
+        /* Volume percentage header */
+        .volume-percentage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .volume-percentage-title {
+            font-weight: bold;
+            color: var(--light-secondary);
+        }
+        
+        .dark-theme .volume-percentage-title {
+            color: var(--dark-secondary);
+        }
+        
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--light-primary);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .dark-theme .progress-bar {
+            background: var(--dark-primary);
+        }
+        
+        /* Quote text */
+        .quote-text {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(142, 45, 226, 0.1);
+            border-radius: 8px;
+            color: var(--light-text);
+            font-size: 0.9rem;
+            grid-column: span 2;
+            margin-bottom: 10px;
+        }
+        
+        .dark-theme .quote-text {
+            background: rgba(142, 45, 226, 0.2);
+            color: var(--dark-text);
+        }
+        
+        .quote-text strong {
+            color: var(--light-primary);
+        }
+        
+        .dark-theme .quote-text strong {
+            color: var(--dark-primary);
+        }
+        
+        /* Download button in info panel */
+        #info-panel button {
+            background: linear-gradient(to right, #11998e, #38ef7d);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .dark-theme #info-panel button {
+            background: linear-gradient(to right, #0d8a7f, #2fd576);
+        }
+        
+        /* Form validation styles */
+        .form-group .error-message {
+            color: var(--error-color);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
+        }
+        
+        .form-group.error input {
+            border-color: var(--error-color);
+        }
+        
+        .form-group.error .error-message {
+            display: block;
+        }
+        
+        /* Materials list option */
+        .materials-list-item {
+            margin-top: 8px;
+            padding-left: 30px;
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div class="watermark">Terra Nova Ltd</div>
+    
+    <div id="canvas-container">
+        <div id="info-panel">
+            <h1>Surface Info</h1>
+            <div>
+                <p>Surface Name: <input type="text" id="surface-name" value="Pond_1"></p>
+                <p>Description: <input type="text" id="surface-desc" value="SRP Design"></p>
+                <p>Total Width: <span class="stat-value" id="total-length-value">0.0m</span></p>
+                <p>Total Length: <span class="stat-value" id="total-width-value">0.0m</span></p>
+                <p>Total Depth: <span class="stat-value" id="total-depth-value">0.0m</span></p>
+                <p>Total Storage: <span class="stat-value" id="design-volume">0.0m³</span></p>
+                <p>Live Storage: <span class="stat-value" id="design-volume">0.0m³</span></p>
+                <p>Dead Storage: <span class="stat-value" id="design-volume">0.0m³</span></p>
+                <p>Pond Base Width: <span class="stat-value" id="design-volume">0.0m³</span></p>
+                <p>Pond Base Length: <span class="stat-value" id="design-volume">0.0m³</span></p>
+
+                <p>Holes Per Decant: <span class="stat-value" id="design-volume">300</span></p>
+                <p>Primary Spillway: <span class="stat-value" id="design-volume">1050 Manhole</span></p>		
+
+            </div>
+            <button id="export-btn">
+                <i class="fas fa-download"></i> Download 3d Model
+            </button>
+        </div>
+        
+        <div id="mouse-controls">
+            <div class="control-item">
+                <div class="mouse-icon">
+                    <div class="mouse-outline"></div>
+                    <div class="mouse-left"></div>
+                </div>
+                <span>Rotate</span>
+            </div>
+            <div class="control-item">
+                <div class="mouse-icon">
+                    <div class="mouse-outline"></div>
+                    <div class="mouse-wheel"></div>
+                </div>
+                <span>Zoom</span>
+            </div>
+            <div class="control-item">
+                <div class="mouse-icon">
+                    <div class="mouse-outline"></div>
+                    <div class="mouse-right"></div>
+                </div>
+                <span>Move</span>
+            </div>
+        </div>
+        
+        <div class="reflection"></div>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <span>Loading 3D Model...</span>
+        </div>
+    </div>
+    
+    <div id="control-panel">
+        <div class="panel-header">
+            <div>
+                <h1>SRP Design Tool</h1>
+                <p>Design Sediment Retention Ponds</p>
+            </div>
+            <div class="theme-toggle" id="theme-toggle">
+                <div class="toggle-indicator"></div>
+                <i class="fas fa-sun"></i>
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h2><i class="fas fa-clipboard-list"> </i>&nbsp; Design Criteria</h2>
+            
+            <div class="volume-percentage-header">
+                <div class="volume-percentage-title">Volume % of Catchment</div>
+                <button class="info-button" id="info-btn"><i class="fas fa-info-circle"></i></button>
+            </div>
+            
+            <div class="percentage-selection">
+                <div class="percentage-options">
+                    <div class="percentage-option">
+                        <input type="radio" id="percentage-2" name="percentage" value="2">
+                        <label for="percentage-2">2%</label>
+                    </div>
+                    <div class="percentage-option">
+                        <input type="radio" id="percentage-3" name="percentage" value="3" checked>
+                        <label for="percentage-3">3%</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="linked-sliders">
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>Total Volume</span>
+                        <span id="volume-value">900m³</span>
+                    </div>
+                    <input type="range" id="volume-slider" min="300" max="1500" step="10" value="900">
+                </div>
+                
+                <div class="link-icon">
+                    <i class="fas fa-link"></i>
+                </div>
+                
+                <div class="slider-control">
+                    <div class="slider-label">
+                        <span>Catchment Area</span>
+                        <span id="catchment-value">3.0Ha</span>
+                    </div>
+                    <input type="range" id="catchment-slider" min="1" max="5" step="0.1" value="3.0">
+                </div>
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Oversize SRP</span>
+                    <span id="oversize-value">0%</span>
+                </div>
+                <input type="range" id="oversize-slider" min="0" max="30" step="1" value="0">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h2><i class="fas fa-ruler-combined"></i>&nbsp; Dimensions</h2>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Width to Length Ratio</span>
+                    <span id="ratio-value">1:3.85</span>
+                </div>
+                <input type="range" id="ratio-slider" min="0.20" max="0.33" step="0.01" value="0.26">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Depth</span>
+                    <span id="depth-value">1.5m</span>
+                </div>
+                <input type="range" id="depth-slider" min="1" max="2" step="0.1" value="1.5">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Spreader Width</span>
+                    <span id="spreader-value">0.6m</span>
+                </div>
+                <input type="range" id="spreader-slider" min="0.3" max="4" step="0.05" value="0.6">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Batter Ratio</span>
+                    <span id="batter-value">1:1.49</span>
+                </div>
+                <input type="range" id="batter-slider" min="0.33" max="1.0" step="0.01" value="0.67">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Free Board</span>
+                    <span id="board-value">60cm</span>
+                </div>
+                <input type="range" id="board-slider" min="20" max="100" step="5" value="60">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-label">
+                    <span>Berm Width</span>
+                    <span id="berm-value">3.0m</span>
+                </div>
+                <input type="range" id="berm-slider" min="1" max="5" step="0.1" value="3.0">
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="reset-btn">
+                <i class="fas fa-redo"></i> Reset Values
+            </button>
+            
+            <div class="quote-text">
+                <strong>Get a quote for construction, machine control project files, and materials</strong>
+            </div>
+            
+            <button id="quote-btn">
+                <i class="fas fa-file-invoice-dollar"></i> Request a Quote
+            </button>
+        </div>
+    </div>
+    
+    <!-- Quote Request Modal -->
+    <div class="modal" id="quote-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-invoice-dollar"></i> Request a Quote</h2>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            
+            <div class="quote-options">
+                <div class="option-group">
+                    <h3><i class="fas fa-info"></i>Quote Information and Options</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            Select any combination of the following options for a quote and we will get in touch within 24 hours. 
+Site investigation and survey, including optional analysis of existing ground vs design for optimum placement, cut/fill quantities ,full construction of SRP's, clean and dirty water courses/diversions, Materials and parts(Decants, cloth, pins, pipe, flock box's, concrete etc.) or just generate highly detailed machine control models for your own GPS enabled machinery.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <h3><i class="fas fa-hard-hat"></i> Site Investigation / Survey</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="site-investigation">
+                            <label for="site-investigation">Comprehensive site investigation, survey and analysis</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="option-group">
+                    <h3><i class="fas fa-cogs"></i> Machine Control Files</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="machine-control">
+                            <label for="machine-control">Generate machine control files</label>
+                        </div>
+                        
+                        <div class="sub-options">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="topcon" class="sub-option">
+                                <label for="topcon">Topcon</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="earthworks" class="sub-option">
+                                <label for="earthworks">3D Earthworks (Caterpillar / Trimble)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="unicontrol" class="sub-option">
+                                <label for="unicontrol">Unicontrol</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="option-group">
+                    <h3><i class="fas fa-truck-moving"></i> Construction Quote</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="construction-quote">
+                            <label for="construction-quote">Detailed construction quote with timeline</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="option-group">
+                    <h3><i class="fas fa-tools"></i> Materials</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="equipment">
+                            <label for="equipment">Materials supply quote</label>
+                        </div>
+                        <div class="checkbox-item materials-list-item">
+                            <input type="checkbox" id="materials-list">
+                            <label for="materials-list">Request Materials List</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Information Section -->
+                <div class="option-group">
+                    <h3><i class="fas fa-user"></i> Contact Information</h3>
+                    <div class="contact-form">
+                        <div class="form-group">
+                            <label for="name">Name:</label>
+                            <input type="text" id="name" placeholder="Enter your full name" required>
+                            <div class="error-message">Please enter your name</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="company">Company:</label>
+                            <input type="text" id="company" placeholder="Enter your company name">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone:</label>
+                            <input type="tel" id="phone" placeholder="Enter your phone number" required>
+                            <div class="error-message">Please enter a valid phone number</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" placeholder="Enter your email address" required>
+                            <div class="error-message">Please enter a valid email address</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="cancel-btn" id="cancel-quote">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="submit-btn" id="submit-quote">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Info Modal -->
+    <div class="modal" id="info-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Volume % of Catchment Area</h2>
+                <button class="close-modal" id="close-info-modal">&times;</button>
+            </div>
+            
+            <div class="option-group">
+                <p><strong>On earthwork sites with slopes less than 18% and less than 200 m in length, design SRPs with a minimum volume of 2% of the contributing catchment area (200 m³ for each ha of contributing catchment).</strong></p>
+                
+                <p><strong>On earthwork sites with slopes over 18% or greater than 200 m in length, design SRPs with a minimum volume of 3% of the contributing catchment area (300 m³ for each ha of contributing catchment).</strong></p>
+ <p><strong>Most sites will require 3%, If you are unsure this can be established with site investigation.</strong></p>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="cancel-btn" id="close-info-btn">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i> <span>Quote request submitted successfully!</span>
+    </div>
+
+    <script>
+        // Classes for SRP design
+        class EnzPoint {
+            constructor(x, y, z, number, name) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.number = number;
+                this.name = name + number;
+            }
+            
+            toXmlPoint() {
+                return `<P id="${this.number}">${this.y} ${this.x} ${this.z}</P>`;
+            }
+        }
+        
+        class PondRectangle {
+            constructor(pt, width, length) {
+                this.zeroPoint = pt;
+                this.width = width;
+                this.length = length;
+            }
+            
+            get p1() { 
+                return this.zeroPoint; 
+            }
+            
+            get p2() { 
+                return new EnzPoint(
+                    this.zeroPoint.x, 
+                    this.zeroPoint.y + this.length, 
+                    this.zeroPoint.z, 
+                    this.zeroPoint.number + 1, 
+                    this.zeroPoint.name
+                ); 
+            }
+            
+            get p3() { 
+                return new EnzPoint(
+                    this.zeroPoint.x + this.width, 
+                    this.zeroPoint.y + this.length, 
+                    this.zeroPoint.z, 
+                    this.zeroPoint.number + 2, 
+                    this.zeroPoint.name
+                ); 
+            }
+            
+            get p4() { 
+                return new EnzPoint(
+                    this.zeroPoint.x + this.width, 
+                    this.zeroPoint.y, 
+                    this.zeroPoint.z, 
+                    this.zeroPoint.number + 3, 
+                    this.zeroPoint.name
+                ); 
+            }
+            
+            toXmlPoints() {
+                return [
+                    this.p1.toXmlPoint(),
+                    this.p2.toXmlPoint(),
+                    this.p3.toXmlPoint(),
+                    this.p4.toXmlPoint()
+                ].join('\n');
+            }
+        }
+        
+        class SRP {
+            constructor() {
+                this.volume = 900;
+                this.widthRatio = 0.26;
+                this.batterRatio = 0.67;
+                this.depth = 1.5;
+                this.spreaderLength = 0.6;  // Default set to 0.6
+                this.freeBoard = 0.6;
+                this.bermWidth = 3.0;      // Default berm width
+                this.oversize = 0;         // Oversize percentage
+                this.zeroPoint = new EnzPoint(54302.742424242424, 12336.6, 0, 1, "berm");
+                this.surfaceName = "Pond_1";
+                this.description = "SRP Design";
+                this.percentage = 3;       // Default to 3%
+                
+                this.resetSRP();
+            }
+            
+            resetSRP() {
+                this.length = Math.sqrt((this.volume * 100) / ((this.widthRatio * 100) * this.depth));
+                this.width = this.widthRatio * this.length;
+                
+                // Pond base calculations
+                const pw = this.width - (this.depth / this.batterRatio);
+                const pl = this.length - ((this.depth / this.batterRatio) / 2) - ((this.depth / 0.33) / 2);
+                const ppt = new EnzPoint(this.zeroPoint.x, this.zeroPoint.y, this.zeroPoint.z, 17, "pondbase");
+                
+                // Spreader calculations
+                const sl = this.spreaderLength;
+                const sw = pw + (((this.depth + 0.4) / this.batterRatio) * 2);
+                const spt = new EnzPoint(
+                    this.zeroPoint.x - (this.depth + 0.4) / this.batterRatio,
+                    this.zeroPoint.y - ((this.depth + 0.4) / 0.33) - sl,
+                    this.zeroPoint.z + this.depth + 0.4,
+                    13,
+                    "spreader"
+                );
+                
+                // Forebay calculations
+                const fl = 2.1;
+                const fw = sw - ((1.2 / this.batterRatio) * 2);
+                const fpt = new EnzPoint(
+                    spt.x + 1.2 / this.batterRatio,
+                    spt.y - 1.2 / this.batterRatio - fl,
+                    spt.z - 1.2,
+                    9,
+                    "forebay"
+                );
+                
+                // Embankment calculations
+                const el = (1.4 / this.batterRatio) + fl + (1.2 / this.batterRatio) + sl + 
+                           ((this.depth + 0.4) / 0.33) + pl + ((this.depth + 0.4 + this.freeBoard) / this.batterRatio);
+                const ew = pw + (2 * ((this.depth + 0.4 + this.freeBoard) / this.batterRatio));
+                const ept = new EnzPoint(
+                    fpt.x - (1.2 + this.freeBoard) / this.batterRatio,
+                    fpt.y - (1.2 + this.freeBoard) / this.batterRatio,
+                    this.depth + 0.4 + this.freeBoard,
+                    5,
+                    "embankment"
+                );
+                
+                // Berm calculations using bermWidth property
+                const bermWidth = this.bermWidth;
+                const bl = el + bermWidth * 2;
+                const bw = ew + bermWidth * 2;
+                const bpt = new EnzPoint(
+                    ept.x - bermWidth,
+                    ept.y - bermWidth,
+                    ept.z,
+                    1,
+                    "berm"
+                );
+                
+                this.pondbase = new PondRectangle(ppt, pw, pl);
+                this.spreader = new PondRectangle(spt, sw, sl);
+                this.forebay = new PondRectangle(fpt, fw, fl);
+                this.embankment = new PondRectangle(ept, ew, el);
+                this.berm = new PondRectangle(bpt, bw, bl);
+            }
+            
+            getLandXMLPoints() {
+                return [
+                    this.berm.toXmlPoints(),
+                    this.embankment.toXmlPoints(),
+                    this.forebay.toXmlPoints(),
+                    this.spreader.toXmlPoints(),
+                    this.pondbase.toXmlPoints()
+                ].join('\n');
+            }
+            
+            getLandXML() {
+                return `<?xml version="1.0"?>
+<LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.landxml.org/schema/LandXML-1.2 http://www.landxml.org/schema/LandXML-1.2/LandXML-1.2.xsd" date="2025-05-03" time="16:21:29" version="1.2" language="English" readOnly="false">
+    <Units>
+        <Metric areaUnit="squareMeter" linearUnit="meter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars" diameterUnit="millimeter" angularUnit="decimal degrees" directionUnit="decimal degrees"></Metric>
+    </Units>
+    <Project name="NA"></Project>
+    <Application name="SRPGEN" desc="SRPGEN" manufacturer="na, Inc." version="2025" manufacturerURL="na" timeStamp="2025-05-03T16:21:29"></Application>
+
+    <Surfaces>
+        <Surface name="${this.surfaceName}" desc="${this.description}">
+            <Definition surfType="TIN" area2DSurf="1639.661266113415" area3DSurf="1706.877656748153" elevMax="22.1" elevMin="20.">
+                <Pnts>
+                    ${this.getLandXMLPoints()}
+                </Pnts>
+                <Faces>
+                    <F n="16 7 2">5 13 14</F>
+                    <F n="3 27 1">14 6 5</F>
+                    <F n="4 30 2">14 17 6</F>
+                    <F n="34 3 5">20 17 14</F>
+                    <F n="4 6 10">20 14 15</F>
+                    <F n="9 5 7">16 15 14</F>
+                    <F n="6 1 13">16 14 13</F>
+                    <F n="10 9 23">7 15 8</F>
+                    <F n="6 11 8">15 16 8</F>
+                    <F n="31 5 8">7 20 15</F>
+                    <F n="9 12 19">8 16 12</F>
+                    <F n="11 13 17">12 16 11</F>
+                    <F n="14 12 7">13 11 16</F>
+                    <F n="15 17 13">13 10 11</F>
+                    <F n="18 14 16">9 10 13</F>
+                    <F n="20 15 1">5 9 13</F>
+                    <F n="12 14 18">12 11 10</F>
+                    <F n="19 17 15">9 12 10</F>
+                    <F n="11 18 20">8 12 9</F>
+                    <F n="28 19 16">5 8 9</F>
+                    <F n="22 0 27">6 2 1</F>
+                    <F n="24 0 21">6 3 2</F>
+                    <F n="25 24 8">8 3 7</F>
+                    <F n="23 22 29">7 3 6</F>
+                    <F n="26 0 23">8 4 3</F>
+                    <F n="28 0 25">8 1 4</F>
+                    <F n="21 28 2">6 1 5</F>
+                    <F n="27 26 20">5 1 8</F>
+                    <F n="32 24 30">18 7 6</F>
+                    <F n="34 29 3">17 18 6</F>
+                    <F n="10 32 33">20 7 19</F>
+                    <F n="31 29 33">19 7 18</F>
+                    <F n="31 32 34">20 19 18</F>
+                    <F n="4 33 30">17 20 18</F>
+                </Faces>
+            </Definition>
+        </Surface>
+    </Surfaces>
+</LandXML>`;
+            }
+        }
+        
+        // Global variables
+        let scene, camera, renderer, controls;
+        let surfaceGroup = null;
+        let srp = new SRP();
+        let minX, maxX, minY, maxY, minZ, maxZ;
+        let centerX, centerY, centerZ;
+        let totalWidth, totalLength, totalDepth;
+        let updatingLinkedSliders = false;
+        
+        // Store initial state for reset
+        let initialState = null;
+        
+        // Initialize the application
+        init();
+        
+        function init() {
+            // Capture initial state
+            captureInitialState();
+            
+            // Setup theme toggle
+            setupThemeToggle();
+            
+            // Initialize Three.js
+            initThreeJS();
+            
+            // Parse and visualize the initial LandXML
+            visualizeLandXML(srp.getLandXML());
+            
+            // Setup UI event listeners
+            setupEventListeners();
+            
+            // Setup modals
+            setupModals();
+            
+            // Start animation loop
+            animate();
+        }
+        
+        function captureInitialState() {
+            initialState = {
+                volume: srp.volume,
+                widthRatio: srp.widthRatio,
+                batterRatio: srp.batterRatio,
+                depth: srp.depth,
+                spreaderLength: srp.spreaderLength,
+                freeBoard: srp.freeBoard,
+                bermWidth: srp.bermWidth,
+                oversize: srp.oversize,
+                percentage: srp.percentage,
+                surfaceName: srp.surfaceName,
+                description: srp.description
+            };
+        }
+        
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('light-theme');
+                document.body.classList.toggle('dark-theme');
+            });
+        }
+        
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            
+            // Create scene
+            scene = new THREE.Scene();
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 10000);
+            camera.position.set(100, 100, 100);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+            
+            // Add orbit controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+            scene.add(ambientLight);
+            
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight1.position.set(1, 1, 1);
+            scene.add(directionalLight1);
+            
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight2.position.set(-1, 0.5, -1);
+            scene.add(directionalLight2);
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+        
+        function visualizeLandXML(xmlString) {
+            // Remove existing surface if present
+            if (surfaceGroup) {
+                scene.remove(surfaceGroup);
+                surfaceGroup = null;
+            }
+            
+            // Show loading indicator
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            loading.querySelector('span').textContent = 'Generating 3D Model...';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                updateProgress(progress);
+                if (progress >= 100) clearInterval(progressInterval);
+            }, 50);
+            
+            try {
+                // Parse the XML
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+                
+                // Extract points
+                const points = {};
+                const pointElements = xmlDoc.getElementsByTagName('P');
+                for (let i = 0; i < pointElements.length; i++) {
+                    const p = pointElements[i];
+                    const id = p.getAttribute('id');
+                    const coords = p.textContent.trim().split(/\s+/);
+                    if (coords.length === 3) {
+                        points[id] = {
+                            x: parseFloat(coords[0]),
+                            y: parseFloat(coords[1]),
+                            z: parseFloat(coords[2])
+                        };
+                    }
+                }
+                
+                // Extract faces
+                const faces = [];
+                const faceElements = xmlDoc.getElementsByTagName('F');
+                for (let i = 0; i < faceElements.length; i++) {
+                    const f = faceElements[i];
+                    const pointIds = f.textContent.trim().split(/\s+/);
+                    if (pointIds.length >= 3) {
+                        faces.push(pointIds);
+                    }
+                }
+                
+                // Calculate center and range of the model
+                minX = Infinity, maxX = -Infinity;
+                minY = Infinity, maxY = -Infinity;
+                minZ = Infinity, maxZ = -Infinity;
+                
+                Object.values(points).forEach(point => {
+                    minX = Math.min(minX, point.x);
+                    maxX = Math.max(maxX, point.x);
+                    minY = Math.min(minY, point.y);
+                    maxY = Math.max(maxY, point.y);
+                    minZ = Math.min(minZ, point.z);
+                    maxZ = Math.max(maxZ, point.z);
+                });
+                
+                centerX = (minX + maxX) / 2;
+                centerY = (minY + maxY) / 2;
+                centerZ = (minZ + maxZ) / 2;
+                
+                // Calculate total dimensions
+                totalWidth = maxX - minX;
+                totalLength = maxY - minY;
+                totalDepth = maxZ - minZ;
+                
+                // Update info panel
+                document.getElementById('total-length-value').textContent = totalLength.toFixed(1) + 'm';
+                document.getElementById('total-width-value').textContent = totalWidth.toFixed(1) + 'm';
+                document.getElementById('total-depth-value').textContent = totalDepth.toFixed(1) + 'm';
+                document.getElementById('design-volume').textContent = srp.volume.toFixed(1) + 'm³';
+                
+                // Create the surface model
+                surfaceGroup = new THREE.Group();
+                
+                // Create material for faces and edges with enhanced shading
+                const faceMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xffd700, // Gold color
+                    metalness: 0.7,
+                    roughness: 0.3,
+                    transparent: true,
+                    opacity: 0.8, // Increased opacity for better shading
+                    side: THREE.DoubleSide,
+                    name: 'faceMaterial'
+                });
+                
+                const edgeMaterial = new THREE.LineBasicMaterial({
+                    color: 0xc9a227, // Darker gold for edges
+                    linewidth: 1.5, // Slightly thicker lines
+                    name: 'edgeMaterial'
+                });
+                
+                // Create each face
+                faces.forEach(facePointIds => {
+                    if (facePointIds.length < 3) return;
+                    
+                    // Create geometry for the face
+                    const faceGeometry = new THREE.BufferGeometry();
+                    const vertices = [];
+                    const pointIds = facePointIds.slice(0, 3);
+                    
+                    // Add vertices
+                    pointIds.forEach(id => {
+                        const point = points[id];
+                        if (point) {
+                            // Adjust to center the model
+                            vertices.push(point.x - centerX, point.z, point.y - centerY);
+                        }
+                    });
+                    
+                    faceGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                    faceGeometry.computeVertexNormals();
+                    
+                    // Create face mesh
+                    const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+                    surfaceGroup.add(faceMesh);
+                    
+                    // Create edges
+                    const edgeGeometry = new THREE.BufferGeometry();
+                    const edgeVertices = [];
+                    
+                    for (let i = 0; i < pointIds.length; i++) {
+                        const id = pointIds[i];
+                        const nextId = pointIds[(i + 1) % pointIds.length];
+                        
+                        const point = points[id];
+                        const nextPoint = points[nextId];
+                        
+                        if (point && nextPoint) {
+                            // Adjust to center the model
+                            edgeVertices.push(
+                                point.x - centerX, point.z, point.y - centerY,
+                                nextPoint.x - centerX, nextPoint.z, nextPoint.y - centerY
+                            );
+                        }
+                    }
+                    
+                    edgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(edgeVertices, 3));
+                    const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+                    surfaceGroup.add(edgeLines);
+                });
+                
+                scene.add(surfaceGroup);
+                
+                // Auto-zoom to fit the model
+                const box = new THREE.Box3().setFromObject(surfaceGroup);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = camera.fov * (Math.PI / 180);
+                const cameraZ = Math.abs(maxDim / Math.sin(fov / 2));
+                
+                camera.position.set(center.x, center.y, cameraZ * 0.5);
+                controls.target.copy(center);
+                controls.update();
+                
+                // Hide loading indicator
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 500);
+            } catch (e) {
+                console.error("Error processing design data:", e);
+                loading.querySelector('span').textContent = 'Error: Invalid design data';
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 2000);
+            }
+        }
+        
+        function updateProgress(percent) {
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+        }
+        
+        function decimalToRatio(decimal) {
+            if (decimal === 0) return "0:1";
+            const ratio = (1 / decimal).toFixed(2);
+            return `1:${ratio}`;
+        }
+        
+        function setupEventListeners() {
+            // Slider value displays
+            const sliders = [
+                { id: 'ratio', min: 0.20, max: 0.33, unit: '', isRatio: true },
+                { id: 'depth', min: 1, max: 2, unit: 'm', isRatio: false },
+                { id: 'spreader', min: 0.3, max: 4, unit: 'm', isRatio: false },
+                { id: 'batter', min: 0.33, max: 1.0, unit: '', isRatio: true },
+                { id: 'volume', min: 300, max: 1500, unit: 'm³', isRatio: false },
+                { id: 'board', min: 20, max: 100, unit: 'cm', isRatio: false },
+                { id: 'oversize', min: 0, max: 30, unit: '%', isRatio: false },
+                { id: 'berm', min: 1, max: 5, unit: 'm', isRatio: false }
+            ];
+            
+            // Initialize slider values
+            sliders.forEach(slider => {
+                const element = document.getElementById(`${slider.id}-slider`);
+                const valueElement = document.getElementById(`${slider.id}-value`);
+                
+                // Set initial display value
+                if (slider.isRatio) {
+                    valueElement.textContent = decimalToRatio(parseFloat(element.value));
+                } else {
+                    valueElement.textContent = element.value + (slider.unit ? slider.unit : '');
+                }
+                
+                // Add change listener
+                element.addEventListener('input', () => {
+                    if (slider.isRatio) {
+                        valueElement.textContent = decimalToRatio(parseFloat(element.value));
+                    } else {
+                        valueElement.textContent = element.value + (slider.unit ? slider.unit : '');
+                    }
+                    
+                    // Update SRP properties
+                    switch(slider.id) {
+                        case 'ratio': srp.widthRatio = parseFloat(element.value); break;
+                        case 'depth': srp.depth = parseFloat(element.value); break;
+                        case 'spreader': srp.spreaderLength = parseFloat(element.value); break;
+                        case 'batter': srp.batterRatio = parseFloat(element.value); break;
+                        case 'volume': srp.volume = parseFloat(element.value); break;
+                        case 'board': srp.freeBoard = parseFloat(element.value) / 100; break;
+                        case 'oversize': srp.oversize = parseFloat(element.value); break;
+                        case 'berm': srp.bermWidth = parseFloat(element.value); break;
+                    }
+                    
+                    updateModel();
+                });
+            });
+            
+            // Catchment Area slider
+            const catchmentSlider = document.getElementById('catchment-slider');
+            const catchmentValue = document.getElementById('catchment-value');
+            
+            catchmentSlider.addEventListener('input', () => {
+                catchmentValue.textContent = parseFloat(catchmentSlider.value).toFixed(1) + 'Ha';
+                
+                if (updatingLinkedSliders) return;
+                updatingLinkedSliders = true;
+                
+                // Calculate base volume based on catchment area and percentage
+                const baseVolume = catchmentSlider.value * 10000 * (srp.percentage / 100);
+                
+                // Apply oversize percentage
+                const totalVolume = baseVolume * (1 + (srp.oversize / 100));
+                
+                // Update Volume slider
+                document.getElementById('volume-slider').value = totalVolume;
+                document.getElementById('volume-value').textContent = totalVolume.toFixed(1) + 'm³';
+                srp.volume = totalVolume;
+                
+                updatingLinkedSliders = false;
+                updateModel();
+            });
+            
+            // Volume slider
+            const volumeSlider = document.getElementById('volume-slider');
+            volumeSlider.addEventListener('input', () => {
+                if (updatingLinkedSliders) return;
+                updatingLinkedSliders = true;
+                
+                // Calculate catchment area based on volume and percentage
+                const baseVolume = volumeSlider.value / (1 + (srp.oversize / 100));
+                const catchment = baseVolume / (10000 * (srp.percentage / 100));
+                
+                // Update Catchment Area slider
+                catchmentSlider.value = catchment;
+                catchmentValue.textContent = catchment.toFixed(1) + 'Ha';
+                srp.volume = parseFloat(volumeSlider.value);
+                
+                updatingLinkedSliders = false;
+                updateModel();
+            });
+            
+            // Oversize slider
+            const oversizeSlider = document.getElementById('oversize-slider');
+            oversizeSlider.addEventListener('input', () => {
+                // Recalculate volume based on oversize adjustment
+                const baseVolume = catchmentSlider.value * 10000 * (srp.percentage / 100);
+                const totalVolume = baseVolume * (1 + (oversizeSlider.value / 100));
+                
+                // Update volume slider and value
+                volumeSlider.value = totalVolume;
+                document.getElementById('volume-value').textContent = totalVolume.toFixed(1) + 'm³';
+                srp.volume = totalVolume;
+                srp.oversize = parseFloat(oversizeSlider.value);
+                
+                updateModel();
+            });
+            
+            // Percentage selection
+            document.querySelectorAll('input[name="percentage"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    srp.percentage = parseInt(radio.value);
+                    
+                    // Recalculate volume based on new percentage
+                    const baseVolume = catchmentSlider.value * 10000 * (srp.percentage / 100);
+                    const totalVolume = baseVolume * (1 + (srp.oversize / 100));
+                    
+                    // Update volume slider and value
+                    volumeSlider.value = totalVolume;
+                    document.getElementById('volume-value').textContent = totalVolume.toFixed(1) + 'm³';
+                    srp.volume = totalVolume;
+                    
+                    updateModel();
+                });
+            });
+            
+            // Reset button - now resets to initial state
+            document.getElementById('reset-btn').addEventListener('click', resetToInitialState);
+            
+            // Export button - moved to info panel
+            document.getElementById('export-btn').addEventListener('click', exportLandXML);
+            
+            // Update SRP name and description from input fields
+            document.getElementById('surface-name').addEventListener('change', function() {
+                srp.surfaceName = this.value;
+            });
+            
+            document.getElementById('surface-desc').addEventListener('change', function() {
+                srp.description = this.value;
+            });
+        }
+        
+        function resetToInitialState() {
+            // Reset SRP to initial values
+            srp.volume = initialState.volume;
+            srp.widthRatio = initialState.widthRatio;
+            srp.batterRatio = initialState.batterRatio;
+            srp.depth = initialState.depth;
+            srp.spreaderLength = initialState.spreaderLength;
+            srp.freeBoard = initialState.freeBoard;
+            srp.bermWidth = initialState.bermWidth;
+            srp.oversize = initialState.oversize;
+            srp.percentage = initialState.percentage;
+            srp.surfaceName = initialState.surfaceName;
+            srp.description = initialState.description;
+            
+            // Reset form controls
+            document.getElementById('ratio-slider').value = initialState.widthRatio;
+            document.getElementById('depth-slider').value = initialState.depth;
+            document.getElementById('spreader-slider').value = initialState.spreaderLength;
+            document.getElementById('batter-slider').value = initialState.batterRatio;
+            document.getElementById('volume-slider').value = initialState.volume;
+            document.getElementById('board-slider').value = initialState.freeBoard * 100;
+            document.getElementById('oversize-slider').value = initialState.oversize;
+            document.getElementById('berm-slider').value = initialState.bermWidth;
+            document.getElementById('catchment-slider').value = 3.0;
+            document.getElementById('surface-name').value = initialState.surfaceName;
+            document.getElementById('surface-desc').value = initialState.description;
+            
+            // Update display values
+            document.getElementById('ratio-value').textContent = decimalToRatio(initialState.widthRatio);
+            document.getElementById('depth-value').textContent = initialState.depth + 'm';
+            document.getElementById('spreader-value').textContent = initialState.spreaderLength + 'm';
+            document.getElementById('batter-value').textContent = decimalToRatio(initialState.batterRatio);
+            document.getElementById('volume-value').textContent = initialState.volume + 'm³';
+            document.getElementById('board-value').textContent = (initialState.freeBoard * 100) + 'cm';
+            document.getElementById('oversize-value').textContent = initialState.oversize + '%';
+            document.getElementById('berm-value').textContent = initialState.bermWidth + 'm';
+            document.getElementById('catchment-value').textContent = '3.0Ha';
+            
+            // Reset percentage radio
+            document.querySelector(`input[name="percentage"][value="${initialState.percentage}"]`).checked = true;
+            
+            // Update the model
+            updateModel();
+        }
+        
+        function setupModals() {
+            const quoteModal = document.getElementById('quote-modal');
+            const quoteBtn = document.getElementById('quote-btn');
+            const closeModal = document.getElementById('close-modal');
+            const cancelBtn = document.getElementById('cancel-quote');
+            
+            const infoModal = document.getElementById('info-modal');
+            const infoBtn = document.getElementById('info-btn');
+            const closeInfoModal = document.getElementById('close-info-modal');
+            const closeInfoBtn = document.getElementById('close-info-btn');
+            
+            // Open quote modal
+            quoteBtn.addEventListener('click', () => {
+                quoteModal.style.display = 'flex';
+            });
+            
+            // Close quote modal
+            closeModal.addEventListener('click', () => {
+                quoteModal.style.display = 'none';
+            });
+            
+            cancelBtn.addEventListener('click', () => {
+                quoteModal.style.display = 'none';
+            });
+            
+            // Open info modal
+            infoBtn.addEventListener('click', () => {
+                infoModal.style.display = 'flex';
+            });
+            
+            // Close info modal
+            closeInfoModal.addEventListener('click', () => {
+                infoModal.style.display = 'none';
+            });
+            
+            closeInfoBtn.addEventListener('click', () => {
+                infoModal.style.display = 'none';
+            });
+            
+            // Submit quote request
+            document.getElementById('submit-quote').addEventListener('click', submitQuoteRequest);
+            
+            // Machine control checkbox handler
+            document.getElementById('machine-control').addEventListener('change', function() {
+                const subOptions = document.querySelectorAll('.sub-option');
+                subOptions.forEach(option => {
+                    option.disabled = !this.checked;
+                });
+            });
+        }
+        
+        function submitQuoteRequest() {
+            // Reset any previous error states
+            resetFormErrors();
+            
+            // Get form values
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const email = document.getElementById('email').value.trim();
+            
+            // Get service selections
+            const siteInvestigation = document.getElementById('site-investigation').checked;
+            const machineControl = document.getElementById('machine-control').checked;
+            const constructionQuote = document.getElementById('construction-quote').checked;
+            const materialsQuote = document.getElementById('equipment').checked;
+            const materialsList = document.getElementById('materials-list').checked;
+            
+            // Validate required fields
+            let isValid = true;
+            
+            if (!name) {
+                showFormError('name', 'Please enter your name');
+                isValid = false;
+            }
+            
+            if (!phone) {
+                showFormError('phone', 'Please enter your phone number');
+                isValid = false;
+            } else if (!isValidPhone(phone)) {
+                showFormError('phone', 'Please enter a valid phone number');
+                isValid = false;
+            }
+            
+            if (!email) {
+                showFormError('email', 'Please enter your email address');
+                isValid = false;
+            } else if (!isValidEmail(email)) {
+                showFormError('email', 'Please enter a valid email address');
+                isValid = false;
+            }
+            
+            // Validate at least one service is selected
+            if (!siteInvestigation && !machineControl && !constructionQuote && !materialsQuote && !materialsList) {
+                showNotification("Please select at least one service option", true);
+                isValid = false;
+            }
+            
+            if (!isValid) return;
+            
+            // If validation passes, show success
+            showNotification("Quote request submitted successfully!");
+            
+            // Close modal after a short delay
+            setTimeout(() => {
+                document.getElementById('quote-modal').style.display = 'none';
+            }, 1500);
+        }
+        
+        function resetFormErrors() {
+            const formGroups = document.querySelectorAll('.form-group');
+            formGroups.forEach(group => {
+                group.classList.remove('error');
+            });
+        }
+        
+        function showFormError(fieldId, message) {
+            const formGroup = document.querySelector(`#${fieldId}`).closest('.form-group');
+            formGroup.classList.add('error');
+            formGroup.querySelector('.error-message').textContent = message;
+        }
+        
+        function isValidPhone(phone) {
+            // Simple phone validation - at least 7 digits
+            return phone.replace(/\D/g, '').length >= 7;
+        }
+        
+        function isValidEmail(email) {
+            // Simple email validation
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        function updateModel() {
+            // Save current camera position and target
+            const cameraPosition = camera.position.clone();
+            const controlsTarget = controls.target.clone();
+            const cameraZoom = camera.zoom;
+            
+            // Recalculate geometry
+            srp.resetSRP();
+            
+            // Show loading indicator
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            loading.querySelector('span').textContent = 'Updating Model...';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                updateProgress(progress);
+                if (progress >= 100) clearInterval(progressInterval);
+            }, 50);
+            
+            // Generate new LandXML and visualize
+            setTimeout(() => {
+                visualizeLandXML(srp.getLandXML());
+                
+                // Restore camera position and target
+                camera.position.copy(cameraPosition);
+                controls.target.copy(controlsTarget);
+                camera.zoom = cameraZoom;
+                camera.updateProjectionMatrix();
+                controls.update();
+            }, 500);
+        }
+        
+        function exportLandXML() {
+            // Create a blob from the XML content
+            const blob = new Blob([srp.getLandXML()], { type: 'application/xml' });
+            
+            // Create a download link
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${srp.surfaceName}.xml`;
+            
+            // Trigger download
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            }, 100);
+        }
+        
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.querySelector('span').textContent = message;
+            
+            if (isError) {
+                notification.classList.add('error');
+            } else {
+                notification.classList.remove('error');
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
